@@ -1,0 +1,39 @@
+{
+  "Providers": [
+    {
+      "name": "anthropic",
+      "api_base_url": "https://api.anthropic.com/v1/messages",
+      "api_key": "$ANTHROPIC_API_KEY",
+      "models": [
+        "claude-sonnet-4-20250514"
+      ]
+    },
+    {
+      "name": "ollama",
+      "api_base_url": "http://localhost:11434/v1/chat/completions",
+      "api_key": "ollama",
+      "models": [
+        "qwen2.5-coder:7b",
+        "qwen2.5-coder:3b",
+        "codellama:7b"
+      ]
+    },
+    {
+      "name": "deepseek",
+      "api_base_url": "https://api.deepseek.com/chat/completions",
+      "api_key": "$DEEPSEEK_API_KEY",
+      "models": [
+        "deepseek-chat",
+        "deepseek-coder"
+      ]
+    }
+  ],
+  "Router": {
+    "default": "ollama,qwen2.5-coder:7b",
+    "background": "ollama,qwen2.5-coder:7b",
+    "think": "anthropic,claude-sonnet-4-20250514",
+    "longContext": "anthropic,claude-sonnet-4-20250514",
+    "longContextThreshold": 60000
+  },
+  "API_TIMEOUT_MS": 120000
+}
