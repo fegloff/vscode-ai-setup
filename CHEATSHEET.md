@@ -3,19 +3,22 @@
 ## Daily Commands
 
 ```bash
-# Start router (first terminal)
-ccr start
+# Make sure Ollama is running (if using local models)
+# Either via macOS app (menu bar icon) or:
+ollama serve
 
 # Work with Claude Code
 cd your-project
+
+# With Anthropic (planning, complex tasks)
 claude
 
-# Switch model in session
-/model ollama,qwen2.5-coder:7b           # Local (free)
-/model anthropic,claude-sonnet-4-20250514 # Premium
+# With local model (execution, simple tasks)
+claude --model qwen3-coder
 
-# Check router status
-ccr status
+# Switch model during session
+/model qwen3-coder
+/model gpt-oss:20b
 ```
 
 ## Typical Workflow
@@ -23,10 +26,10 @@ ccr status
 ```
 1. Open project      → cd my-project && claude
 2. Plan feature      → "I need to implement X"
-                       (Claude uses 'planner' → Sonnet)
+                       (Claude uses 'planner')
 3. Review plan       → docs/tasks/task-XXX.md
 4. Execute           → "Execute the plan for TASK-XXX"
-                       (Claude uses 'task-executor' → Ollama)
+                       (switch to local: /model qwen3-coder)
 5. Iterate           → "Adjust component Y"
 ```
 
@@ -37,13 +40,16 @@ ccr status
 ollama ps
 
 # Manually unload from RAM
-ollama stop qwen2.5-coder:7b
+ollama stop qwen3-coder
 
 # List available models
 ollama list
 
 # Download new model
-ollama pull codellama:7b
+ollama pull gpt-oss:20b
+
+# Check if Ollama is running
+curl http://localhost:11434/api/tags
 ```
 
 ## File Structure
@@ -51,8 +57,8 @@ ollama pull codellama:7b
 ```
 .claude/
 ├── agents/
-│   ├── planner.md        # model: sonnet
-│   └── task-executor.md  # model: ollama local
+│   ├── planner.md        # For planning (use with Sonnet or capable model)
+│   └── task-executor.md  # For execution (use with local model)
 └── settings.json
 
 docs/
@@ -64,20 +70,13 @@ docs/
 CLAUDE.md                 # Project context
 ```
 
-## CCR Automatic Routing
-
-| Context | Assigned Model |
-|---------|----------------|
-| `default` | Ollama qwen2.5-coder:7b |
-| `background` | Ollama qwen2.5-coder:7b |
-| `think` | Claude Sonnet |
-| `longContext` (>60k tokens) | Claude Sonnet |
-
 ## Quick Troubleshooting
 
 ```bash
-# CCR not responding
-ccr stop && ccr start
+# Ollama not responding
+curl http://localhost:11434/api/tags
+# If error, start it:
+ollama serve
 
 # Claude Code doesn't find agents
 ls -la .claude/agents/  # Verify they exist
@@ -85,11 +84,29 @@ ls -la .claude/agents/  # Verify they exist
 # Ollama using too much RAM
 ollama ps               # Check what's loaded
 ollama stop <model>     # Unload from memory
+
+# Context length errors - create larger context model
+echo 'FROM qwen3-coder
+PARAMETER num_ctx 32768' > /tmp/Modelfile
+ollama create qwen3-coder-32k -f /tmp/Modelfile
 ```
 
-## API Keys Required
+## Environment Setup
 
-| Service | Variable | Where to get |
-|---------|----------|--------------|
-| Claude | `ANTHROPIC_API_KEY` | console.anthropic.com |
-| DeepSeek (optional) | `DEEPSEEK_API_KEY` | platform.deepseek.com |
+```bash
+# Option A: Ollama only (add to ~/.zshrc)
+export ANTHROPIC_AUTH_TOKEN=ollama
+export ANTHROPIC_BASE_URL=http://localhost:11434
+
+# Option B: Anthropic + Ollama alias (add to ~/.zshrc)
+export ANTHROPIC_API_KEY="sk-ant-..."
+alias claude-local='ANTHROPIC_AUTH_TOKEN=ollama ANTHROPIC_BASE_URL=http://localhost:11434 claude --model qwen3-coder'
+```
+
+## Recommended Models
+
+| Model | RAM | Best For |
+|-------|-----|----------|
+| `qwen3-coder` | 8GB | Coding tasks |
+| `gpt-oss:20b` | 16GB | General purpose |
+| `gpt-oss:120b` | 64GB+ | Complex reasoning |

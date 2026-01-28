@@ -6,15 +6,14 @@ Personal AI-assisted development environment configuration, optimized to reduce 
 
 | Tool | Role | Cost |
 |------|------|------|
-| **Claude Code** | Planning, architecture, orchestration | Claude subscription |
-| **Claude Code Router (CCR)** | Routing to free/cheap models | Free |
+| **Claude Code** | Planning, architecture, orchestration | Claude subscription or Ollama |
+| **Ollama** | Local models for code execution | Free |
 | **GitHub Copilot Free** | Inline autocomplete | Free |
-| **Ollama** | Local models | Free |
 
 ## Philosophy
 
-- **Role separation**: Claude Code for thinking, cheap models for execution
-- **Specialized agents**: `planner` (Sonnet) and `task-executor` (Ollama local)
+- **Role separation**: Claude Code for thinking, local models for execution
+- **Specialized agents**: `planner` (Sonnet or cloud) and `task-executor` (Ollama local)
 - **Structured documentation**: Scope → Tasks → Execution Plans
 - **Minimal friction**: Repeatable setup, low cognitive overhead
 
@@ -59,7 +58,37 @@ rm -rf ~/Library/Saved\ Application\ State/com.microsoft.VSCode.savedState
 # Reinstall VS Code from https://code.visualstudio.com/
 ```
 
-### 2. Install Claude Code
+### 2. Install Ollama
+
+Download the macOS app (recommended - includes menu bar icon):
+```bash
+open https://ollama.com/download/mac
+```
+
+Or install via Homebrew (terminal only):
+```bash
+# macOS
+brew install ollama
+
+# Linux
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+After installation:
+```bash
+# Download recommended coding model
+ollama pull qwen3-coder
+
+# Or for larger context (if you have 16GB+ RAM)
+ollama pull gpt-oss:20b
+
+# Verify
+ollama list
+```
+
+> **Note**: Ollama only uses RAM when a model is loaded. It automatically unloads after 5 minutes of inactivity.
+
+### 3. Install Claude Code
 
 ```bash
 # Install globally
@@ -67,49 +96,9 @@ npm install -g @anthropic-ai/claude-code
 
 # Verify installation
 claude --version
-
-# Login (opens browser for authentication)
-claude login
 ```
 
-### 3. Install Claude Code Router (CCR)
-
-```bash
-# Install globally
-npm install -g @musistudio/claude-code-router
-
-# Verify installation
-ccr --version
-
-# Create config directory
-mkdir -p ~/.claude-code-router
-
-# Copy config template (edit afterwards)
-cp config/ccr-config.json ~/.claude-code-router/config.json
-```
-
-### 4. Install Ollama (Local Models)
-
-```bash
-# macOS
-brew install ollama
-
-# Linux
-curl -fsSL https://ollama.com/install.sh | sh
-
-# Start service
-ollama serve
-
-# Download recommended coding model (~4.5GB)
-ollama pull qwen2.5-coder:7b
-
-# Verify
-ollama list
-```
-
-> **Note**: Ollama only uses RAM when a model is loaded. It automatically unloads after 5 minutes of inactivity. With 16GB RAM you'll be fine.
-
-### 5. Enable GitHub Copilot Free (VS Code)
+### 4. Enable GitHub Copilot Free (VS Code)
 
 GitHub Copilot Free is built into VS Code. Just:
 
@@ -123,64 +112,64 @@ Limits: ~2,000 completions/month, ~50 chat messages/month.
 
 ## Configuration
 
-### Configure CCR
-
-Edit `~/.claude-code-router/config.json`:
-
-```json
-{
-  "Providers": [
-    {
-      "name": "anthropic",
-      "api_base_url": "https://api.anthropic.com/v1/messages",
-      "api_key": "$ANTHROPIC_API_KEY",
-      "models": ["claude-sonnet-4-20250514"]
-    },
-    {
-      "name": "ollama",
-      "api_base_url": "http://localhost:11434/v1/chat/completions",
-      "api_key": "ollama",
-      "models": ["qwen2.5-coder:7b"]
-    }
-  ],
-  "Router": {
-    "default": "ollama,qwen2.5-coder:7b",
-    "background": "ollama,qwen2.5-coder:7b",
-    "think": "anthropic,claude-sonnet-4-20250514",
-    "longContext": "anthropic,claude-sonnet-4-20250514",
-    "longContextThreshold": 60000
-  },
-  "API_TIMEOUT_MS": 120000
-}
-```
-
-### Activate CCR
-
-```bash
-# Start the router (separate terminal or as service)
-ccr start
-
-# Add to your shell profile (~/.zshrc or ~/.bashrc):
-eval "$(ccr activate)"
-
-# Reload shell
-source ~/.zshrc
-```
-
-### Environment variables
+### Option A: Use Ollama only (100% free, local)
 
 Add to `~/.zshrc` or `~/.bashrc`:
 
 ```bash
-# API Keys
+# Claude Code with Ollama
+export ANTHROPIC_AUTH_TOKEN=ollama
+export ANTHROPIC_BASE_URL=http://localhost:11434
+```
+
+Then reload your shell:
+```bash
+source ~/.zshrc
+```
+
+Usage:
+```bash
+# Run with local model
+claude --model qwen3-coder
+
+# Or with larger model
+claude --model gpt-oss:20b
+```
+
+### Option B: Use Anthropic for planning + Ollama for execution (recommended)
+
+This gives you the best of both worlds:
+- **Planning** with Claude Sonnet (smarter, uses your subscription)
+- **Execution** with local models (free, fast)
+
+Add to `~/.zshrc` or `~/.bashrc`:
+
+```bash
+# Keep Anthropic as default for planning
 export ANTHROPIC_API_KEY="sk-ant-..."
 
-# Optional: DeepSeek as cloud backup
-# export DEEPSEEK_API_KEY="sk-..."
-
-# CCR activation (after ccr start)
-eval "$(ccr activate)"
+# Alias for quick switching to local model
+alias claude-local='ANTHROPIC_AUTH_TOKEN=ollama ANTHROPIC_BASE_URL=http://localhost:11434 claude --model qwen3-coder'
 ```
+
+Usage:
+```bash
+# Use Anthropic (planning, complex tasks)
+claude
+
+# Use local model (execution, simple tasks)
+claude-local
+```
+
+### Recommended Models
+
+| Model | Size | Use Case | RAM Required |
+|-------|------|----------|--------------|
+| `qwen3-coder` | ~4GB | Coding tasks | 8GB |
+| `gpt-oss:20b` | ~12GB | General purpose | 16GB |
+| `gpt-oss:120b` | ~70GB | Complex tasks | 64GB+ |
+
+> **Important**: Claude Code requires at least 32K context window. See [Ollama context length docs](https://docs.ollama.com/context-length) to adjust if needed.
 
 ---
 
@@ -208,8 +197,11 @@ cd your-project
 ```bash
 cd your-project
 
-# Start Claude Code session
+# Start Claude Code session (with Anthropic)
 claude
+
+# Or with local model
+claude --model qwen3-coder
 
 # Claude will auto-detect agents in .claude/agents/
 
@@ -225,12 +217,13 @@ claude
 # Claude invokes 'task-executor' → implements code
 ```
 
-### Switch models manually
+### Switch models on the fly
 
 ```bash
-# Inside a Claude Code session
-/model ollama,qwen2.5-coder:7b        # Local (free)
-/model anthropic,claude-sonnet-4-20250514  # Premium
+# Inside a Claude Code session, you can switch models:
+/model qwen3-coder         # Local Ollama
+/model gpt-oss:20b         # Larger local model
+/model claude-sonnet-4-20250514  # Anthropic (if configured)
 ```
 
 ---
@@ -296,17 +289,16 @@ src/
 
 ## Troubleshooting
 
-### CCR not connecting
+### Ollama not connecting
 
 ```bash
-# Check if service is running
-ccr status
+# Check if Ollama is running
+curl http://localhost:11434/api/tags
 
-# Restart
-ccr stop && ccr start
+# If not running, start it
+ollama serve
 
-# Verify environment variables
-echo $ANTHROPIC_BASE_URL  # Should point to local router
+# Or if using the macOS app, click the llama icon in menu bar
 ```
 
 ### Claude Code doesn't find agents
@@ -325,10 +317,25 @@ ls -la .claude/agents/
 ollama ps
 
 # Manually unload a model
-ollama stop qwen2.5-coder:7b
+ollama stop qwen3-coder
 
 # Use a smaller model if needed
-ollama pull qwen2.5-coder:3b
+ollama pull qwen3-coder:1.5b
+```
+
+### Context length errors
+
+Claude Code needs at least 32K context. Increase it:
+```bash
+# Create a Modelfile
+echo 'FROM qwen3-coder
+PARAMETER num_ctx 32768' > Modelfile
+
+# Create custom model with larger context
+ollama create qwen3-coder-32k -f Modelfile
+
+# Use it
+claude --model qwen3-coder-32k
 ```
 
 ---
@@ -336,8 +343,8 @@ ollama pull qwen2.5-coder:3b
 ## Resources
 
 - [Claude Code Docs](https://code.claude.com/docs)
-- [Claude Code Router](https://github.com/musistudio/claude-code-router)
-- [Ollama](https://ollama.com/)
+- [Ollama + Claude Code Integration](https://docs.ollama.com/integrations/claude-code)
+- [Ollama Models](https://ollama.com/library)
 - [Next.js App Router](https://nextjs.org/docs/app)
 - [Hono](https://hono.dev/)
 - [FastAPI](https://fastapi.tiangolo.com/)
