@@ -15,6 +15,9 @@ This project uses **uv** for fast, reliable Python dependency management with a 
 # Install uv (if not installed)
 command -v uv >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh
 
+## for Mac use
+brew install uv
+
 # Create local virtual environment
 uv venv
 
