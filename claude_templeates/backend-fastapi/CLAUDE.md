@@ -150,6 +150,21 @@ ruff format .                     # Format
 mypy src/
 ```
 
+## Common Dependencies Reference
+
+When specifying async database dependencies in `pyproject.toml`:
+
+```toml
+# CORRECT - SQLAlchemy async with PostgreSQL
+dependencies = [
+    "sqlalchemy[asyncio]>=2.0",  # async support extra
+    "asyncpg>=0.29",             # async PostgreSQL driver (separate package)
+]
+
+# WRONG - this extra does not exist
+# "sqlalchemy[asyncpg]"  # ❌ No such extra
+```
+
 ## Important Notes
 
 - Virtual environment stored locally in `.venv/` (add to `.gitignore`)
