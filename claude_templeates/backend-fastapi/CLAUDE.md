@@ -1,52 +1,95 @@
 # Project: [PROJECT_NAME]
 
 ## Stack
-- FastAPI (Python 3.11+)
+- FastAPI (Python 3.12+)
 - [Database: PostgreSQL / MongoDB / etc.]
-- [ORM: SQLAlchemy / SQLModel / etc.]
-- Pydantic for validation
+- [ORM: SQLAlchemy 2.0 / SQLModel / etc.]
+- Pydantic v2 for validation
+- uv for dependency management
+
+## Environment Setup
+
+This project uses **uv** for fast, reliable Python dependency management with a local virtual environment.
+
+```bash
+# Install uv (if not installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Create local virtual environment
+uv venv
+
+# Activate the environment
+source .venv/bin/activate  # Linux/macOS
+# .venv\Scripts\activate   # Windows
+
+# Install dependencies
+uv pip install -r requirements.txt
+# Or if using pyproject.toml:
+uv pip install -e ".[dev]"
+
+# Add new dependencies
+uv pip install <package>
+uv pip freeze > requirements.txt
+```
 
 ## Project Structure
 
 ```
-src/
-├── main.py               # Entry point
-├── config.py             # Configuration / settings
+.
+├── .venv/                # Local virtual environment (git-ignored)
+├── pyproject.toml        # Project metadata & dependencies
+├── requirements.txt      # Pinned dependencies (alternative)
+├── .python-version       # Python version (e.g., 3.12)
 │
-├── api/                  # API layer
+├── src/
 │   ├── __init__.py
-│   ├── deps.py           # Dependencies (get_db, get_current_user)
-│   └── v1/
+│   ├── main.py           # Entry point, app factory
+│   ├── config.py         # Settings (pydantic-settings)
+│   │
+│   ├── api/              # API layer
+│   │   ├── __init__.py
+│   │   ├── deps.py       # Dependencies (get_db, get_current_user)
+│   │   └── v1/
+│   │       ├── __init__.py
+│   │       ├── router.py # Route aggregator
+│   │       ├── auth.py   # Auth endpoints
+│   │       └── users.py  # User endpoints
+│   │
+│   ├── services/         # Business logic
+│   │   ├── __init__.py
+│   │   ├── auth.py
+│   │   └── users.py
+│   │
+│   ├── repositories/     # Data access layer
+│   │   ├── __init__.py
+│   │   └── users.py
+│   │
+│   ├── models/           # SQLAlchemy/DB models
+│   │   ├── __init__.py
+│   │   └── user.py
+│   │
+│   ├── schemas/          # Pydantic schemas (DTOs)
+│   │   ├── __init__.py
+│   │   └── user.py
+│   │
+│   ├── core/             # Core utilities
+│   │   ├── __init__.py
+│   │   ├── db.py         # Database connection
+│   │   ├── security.py   # Auth utilities
+│   │   └── exceptions.py # Custom exceptions
+│   │
+│   └── middleware/       # Custom middleware
 │       ├── __init__.py
-│       ├── router.py     # Route aggregator
-│       ├── auth.py       # Auth endpoints
-│       └── users.py      # User endpoints
+│       └── logging.py    # Request logging
 │
-├── services/             # Business logic
-│   ├── __init__.py
-│   ├── auth.py
-│   └── users.py
-│
-├── repositories/         # Data access layer
-│   ├── __init__.py
-│   └── users.py
-│
-├── models/               # SQLAlchemy/DB models
-│   ├── __init__.py
-│   └── user.py
-│
-├── schemas/              # Pydantic schemas
-│   ├── __init__.py
-│   └── user.py
-│
-├── core/                 # Core utilities
-│   ├── __init__.py
-│   ├── db.py             # Database connection
-│   ├── security.py       # Auth utilities
-│   └── exceptions.py     # Custom exceptions
+├── alembic/              # Database migrations
+│   ├── versions/
+│   └── env.py
 │
 └── tests/
-    └── ...
+    ├── conftest.py       # Fixtures
+    ├── test_api/
+    └── test_services/
 ```
 
 ## Code Conventions
@@ -78,15 +121,27 @@ src/
 ## Useful Commands
 
 ```bash
+# Environment (uv)
+uv venv                           # Create local .venv
+source .venv/bin/activate         # Activate
+uv pip install -e ".[dev]"        # Install with dev deps
+uv pip install <package>          # Add dependency
+
 # Development
-uvicorn src.main:app --reload
+uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+
+# Database migrations (Alembic)
+alembic upgrade head              # Apply migrations
+alembic revision --autogenerate -m "description"  # Create migration
 
 # Tests
-pytest
+pytest                            # Run all tests
+pytest -v --cov=src               # With coverage
 
-# Linting
-ruff check .
-ruff format .
+# Linting & Formatting
+ruff check .                      # Lint
+ruff check . --fix                # Lint with autofix
+ruff format .                     # Format
 
 # Type checking
 mypy src/
@@ -94,4 +149,6 @@ mypy src/
 
 ## Important Notes
 
+- Virtual environment stored locally in `.venv/` (add to `.gitignore`)
+- Use `pydantic-settings` for configuration management
 - [Add project-specific considerations here]
