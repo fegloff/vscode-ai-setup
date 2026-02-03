@@ -13,7 +13,7 @@ This project uses **uv** for fast, reliable Python dependency management with a 
 
 ```bash
 # Install uv (if not installed)
-curl -LsSf https://astral.sh/uv/install.sh | sh
+command -v uv >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Create local virtual environment
 uv venv
