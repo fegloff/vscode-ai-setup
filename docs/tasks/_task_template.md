@@ -18,6 +18,29 @@ A task file must be **self-sufficient**: an execution agent must be able to comp
 
 ---
 
+## Subtasks
+
+For complex tasks (>2h or multi-step), break down into ordered subtasks.
+
+Each subtask MUST include a `**Status:**` field as the first line after the heading. Valid values: `pending | completed | blocked`.
+
+Each subtask should specify:
+* **Status:** pending | completed | blocked
+* **Files:** paths to create or modify
+* **Action:** create, modify, or delete
+* **Dependencies:** which subtasks must complete first
+* **Description:** what to build (NOT how to code it)
+* **Completion:** how to verify the subtask is done
+
+The task-executor agent updates the Status field after completing each subtask. This enables cross-session continuity — when resuming, the executor skips `completed` subtasks and starts on the first `pending` one.
+
+**⚠️ CRITICAL: Subtasks must NOT contain implementation code.** No TypeScript, JSX, CSS, SQL, or any syntax that could be copy-pasted into source files. Describe the WHAT, not the HOW. The executor agent writes all code.
+
+❌ Bad: "Create function with `export function foo() { return bar; }`"
+✅ Good: "Create foo function that returns bar value"
+
+---
+
 ## Task Objective
 
 Clear, concrete statement of what must be achieved.
@@ -113,6 +136,8 @@ Optional guidance from the planner:
 * ordering constraints
 
 This section is advisory, not mandatory.
+
+**⚠️ NO IMPLEMENTATION CODE**: This section must NOT contain TypeScript, JSX, CSS, or any code that could be copy-pasted into source files. Describe WHAT to build, not HOW to code it. The executor agent writes the code.
 
 ---
 
